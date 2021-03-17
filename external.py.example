@@ -1,0 +1,2 @@
+import sys
+sys.path.append("/home/vlad/Documents/mri/marcos_client")

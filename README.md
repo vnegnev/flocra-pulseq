@@ -28,3 +28,6 @@ dict: tuple of numpy.ndarray time and update arrays, with variable name keys
 
 dict: parameter dictionary containing raster times, readout numbers, and any file-defined variables
 
+# Tests
+
+In test_flocra-pulseq.py - must have the marcos_client folder in the Python path
