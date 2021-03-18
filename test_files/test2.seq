@@ -12,7 +12,7 @@ revision 0
 Test 2
 
 # Format of blocks:
-#  #  D RF  GX  GY  GZ ADC EXT
+#  #  D  RF  GX  GY  GZ ADC EXT
 [BLOCKS]
 1  0  1   0   0   0  0  0
 2  1  0   0   0   0  0  0
@@ -71,4 +71,3 @@ num_samples 100
 0
 0
 47
-

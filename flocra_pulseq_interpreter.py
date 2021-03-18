@@ -75,7 +75,7 @@ class PSInterpreter:
         }
 
         # Defined variable names to output
-        self._var_names = ('tx0', 'grad_vx', 'grad_vy', 'grad_vz', 'rx0_rst_n')
+        self._var_names = ('tx0', 'grad_vx', 'grad_vy', 'grad_vz', 'rx0_en')
 
         # PulSeq dictionary storage
         self._blocks = {}
@@ -390,7 +390,7 @@ class PSInterpreter:
             rx_start = rx_event['delay']
             rx_end = rx_start + rx_event['num'] * self._rx_t
             readout_num += rx_event['num']
-            out_dict['rx0_rst_n'] = (np.array([rx_start, rx_end]), np.array([1, 0]))
+            out_dict['rx0_en'] = (np.array([rx_start, rx_end]), np.array([1, 0]))
             duration = max(duration, rx_end)
 
         # Return durations for each PR and leading edge values
