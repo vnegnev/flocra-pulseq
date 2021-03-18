@@ -15,7 +15,6 @@ st = pdb.set_trace
 
 def test1_example():
     psi = PSInterpreter(rf_center=2e6,
-                        clk_t = 1000/fpga_clk_freq_MHz,
                         grad_t = 10,
                         grad_max=1e11) # very large, just for testing
 

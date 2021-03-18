@@ -10,7 +10,7 @@ import io
 
 class PSInterpreter:
     """
-    Interpret object that can compile a PulSeq file into a FLOCRA update stream array. 
+    Interpret object that can compile a PulSeq file into a FLOCRA update stream array.
     Run PSInterpreter.compile to compile a .seq file into a [updates]x[variables]
 
     Attributes:
@@ -41,10 +41,10 @@ class PSInterpreter:
 
         self._clk_t = clk_t # Instruction clock period in us
         self._tx_t = tx_t # Transmit sample period in us
-        self._warning_if(int(tx_t / self._clk_t) * self._clk_t != tx_t, 
+        self._warning_if(int(tx_t / self._clk_t) * self._clk_t != tx_t,
             f"tx_t ({tx_t}) isn't a multiple of clk_t ({clk_t})")
         self._grad_t = grad_t # Gradient sample period in us
-        self._warning_if(int(grad_t / self._clk_t) * self._clk_t != grad_t, 
+        self._warning_if(int(grad_t / self._clk_t) * self._clk_t != grad_t,
             f"grad_t ({(grad_t)}) isn't multiple of clk_t ({clk_t})")
         self._rx_div = None
         self._rx_t = None
@@ -84,7 +84,7 @@ class PSInterpreter:
         self._adc_events = {}
         self._delay_events = {}
         self._shapes = {}
-        self._definitions = {}    
+        self._definitions = {}
 
         # Interpolated and compiled data for output
         self._tx_data = {}
@@ -103,7 +103,7 @@ class PSInterpreter:
 
         Args:
             pulseq_file (str): PulSeq file to compile from
-        
+
         Returns:
             dict: tuple of numpy.ndarray time and update arrays, with variable name keys
             dict: parameter dictionary containing raster times, readout numbers, and any file-defined variables
@@ -121,10 +121,11 @@ class PSInterpreter:
         self.is_assembled = True
         param_dict = {'readout_number' : self.readout_number, 'tx_t' : self._tx_t, 'rx_t' : self._rx_t, 'grad_t': self._grad_t}
         for key, value in self._definitions.items():
-            self._warning_if(key in param_dict, f'Key conflict: overwriting key [{key}] with value [{param_dict[key]}]')
+            if key in param_dict:
+                self._logger.warning(f'Key conflict: overwriting key [{key}], value [{param_dict[key]}] with new value [{value}]')
             param_dict[key] = value
         return (self.out_data, param_dict)
-        
+
     # Open file and read in all sections into class storage
     def _read_pulseq(self, pulseq_file):
         """
@@ -140,9 +141,9 @@ class PSInterpreter:
             next_line = ''
 
             while True:
-                if not next_line: 
+                if not next_line:
                     line = f.readline()
-                else: 
+                else:
                     line = next_line
                     next_line = ''
                 if line == '': break
@@ -167,7 +168,7 @@ class PSInterpreter:
         self._logger.info('Valid ids')
 
         # Check that all delays are multiples of clk_t
-        for events in [self._blocks.values(), self._rf_events.values(), self._grad_events.values(), 
+        for events in [self._blocks.values(), self._rf_events.values(), self._grad_events.values(),
                         self._adc_events.values()]:
             for event in events:
                 self._warning_if(int(event['delay'] / self._clk_t) * self._clk_t != event['delay'],
@@ -175,7 +176,7 @@ class PSInterpreter:
         for delay in self._delay_events.values():
             self._warning_if(int(delay / self._clk_t) * self._clk_t != delay,
                 f'Delay event {delay} is not a multiple of clk_t')
-        
+
         # Check that RF/ADC (TX/RX) only have one frequency offset -- can't be set within one file.
         freq = None
         base_id = None
@@ -206,11 +207,11 @@ class PSInterpreter:
         if dwell is not None:
             self._rx_div = np.round(dwell / self._clk_t).astype(int)
             self._rx_t = self._clk_t * self._rx_div
-            self._warning_if(self._rx_div * self._clk_t != dwell, 
+            self._warning_if(self._rx_div * self._clk_t != dwell,
                 f'Dwell time ({dwell}) rounded to {self._rx_t}, multiple of clk_t ({self._clk_t})')
-        
+
         self._logger.info('PulSeq file loaded')
-    
+
     # Compilation into data formats
     #region
 
@@ -230,11 +231,11 @@ class PSInterpreter:
             self._warning_if(len(mag_shape) != len(phase_shape), f'Tx envelope of RF event {tx_id} has mismatched magnitude ' \
                 'and phase information, the last entry of the shorter will be extended')
 
-            # Event duration and interpolated length -- extends shorter of phase/mag shape to length of longer   
-            pulse_duration = max(len(mag_shape), len(phase_shape)) * self._ps_tx_t # us          
+            # Event duration and interpolated length -- extends shorter of phase/mag shape to length of longer
+            pulse_duration = max(len(mag_shape), len(phase_shape)) * self._ps_tx_t # us
             pulse_len = int(max(len(mag_shape), len(phase_shape)) * (self._ps_tx_t / self._tx_t)) # unitless
             self._error_if(pulse_len < 1, f'RF event {tx_id} duration {pulse_duration} is too short for a tx_t of {self._tx_t}')
-            
+
             # Interpolate values on falling edge (and extend past end of shorter, if needed)
             x = np.flip(np.linspace(pulse_len * self._tx_t, 0, num=pulse_len, endpoint=False)) # us
             mag_x_ps = np.flip(np.linspace(len(mag_shape)* self._ps_tx_t, 0, num=len(mag_shape), endpoint=False))
@@ -244,10 +245,10 @@ class PSInterpreter:
 
             # Convert to complex tx envelope
             tx_env = np.exp((phase_interp + tx_event['phase']) * 1j) * mag_interp
-            
+
             self._error_if(np.any(np.abs(tx_env) > 1.0), f'Magnitude of RF event {tx_id} is too ' \
                 f'large relative to RF max {self._rf_amp_max}')
-            
+
             # Save tx data, delay, and duration
             self._tx_delays[tx_id] = tx_event['delay']
             self._tx_data[tx_id] = tx_env
@@ -272,26 +273,26 @@ class PSInterpreter:
                 event_len = int(event_duration / self._grad_t) # unitless
             else:
                 shape = self._shapes[grad_event['shape_id']]
-                # Event duration and interpolated length -- extends shorter of phase/mag shape to length of longer   
-                event_duration = len(shape) * self._ps_grad_t # us          
+                # Event duration and interpolated length -- extends shorter of phase/mag shape to length of longer
+                event_duration = len(shape) * self._ps_grad_t # us
                 event_len = int(len(shape) * (self._ps_grad_t / self._grad_t)) # unitless
             self._error_if(event_len < 1, f'Gradient event {grad_id} duration {event_duration} is too short for a grad_t of {self._grad_t}')
-            
+
             # Interpolate values on falling edge
             x = np.flip(np.linspace(event_len * self._grad_t, 0, num=event_len, endpoint=False)) # us
             if len(grad_event) == 5:
                 x_ps = np.array([0, grad_event['rise'], grad_event['rise'] + grad_event['flat'], event_duration])
-            else:    
+            else:
                 x_ps = np.flip(np.linspace(event_duration, 0, num=len(shape), endpoint=False))
             grad_interp = np.interp(x, x_ps, shape) * grad_event['amp'] / self._grad_max
-            
+
             self._error_if(np.any(np.abs(grad_interp) > 1.0), f'Magnitude of gradient event {grad_id} is too ' \
                 f'large relative to gradient max {self._grad_max}')
-            
+
             # Save tx data, delay, and duration
             self._grad_delays[grad_id] = grad_event['delay']
             self._grad_data[grad_id] = grad_interp
-    
+
         self._logger.info('Gradient data compiled')
 
     # Encode all blocks
@@ -323,7 +324,7 @@ class PSInterpreter:
             times[var].append(np.zeros(1) + start)
             updates[var].append(np.zeros(1))
 
-        out_data = {var: (np.concatenate(times[var]), np.concatenate(updates[var])) 
+        out_data = {var: (np.concatenate(times[var]), np.concatenate(updates[var]))
                 for var in self._var_names}
 
 
@@ -339,7 +340,7 @@ class PSInterpreter:
 
         Args:
             block_id (int): Block id key for block in object dict memory to be encoded
-        
+
         Returns:
             dict: tuples of np.ndarray times, updates with variable name keys
             float: duration of the block
@@ -368,7 +369,7 @@ class PSInterpreter:
             tx_times = np.linspace(tx_start, tx_end, num=tx_len, endpoint=False) # us
             out_dict['tx0'] = (tx_times, tx_updates)
             duration = max(duration, tx_end)
-           
+
         # Gradient updates
         for grad_ch in ('gx', 'gy', 'gz'):
             grad_id = block[grad_ch]
@@ -430,7 +431,7 @@ class PSInterpreter:
                 data_line.append(0)
                 self._warning_if(data_line[0] in self._blocks, f'Repeat block ID {data_line[0]}, overwriting')
                 self._blocks[data_line[0]] = {var_names[i] : data_line[i+1] for i in range(len(var_names))}
-        
+
         if len(self._blocks) == 0: self._logger.error('Zero blocks read, nonzero blocks needed')
         assert len(self._blocks) > 0, 'Zero blocks read, nonzero blocks needed'
         self._logger.info('Blocks: Complete')
@@ -729,11 +730,11 @@ class PSInterpreter:
         comment_index = line.find('#')
         if comment_index >= 0:
             line = line[:comment_index]
-        
+
         return line.rstrip('\n').strip().replace(',','')
-    
+
     #endregion
-    
+
     # Error and warnings
     #region
     # For crashing and logging errors (may change behavior)
@@ -743,7 +744,7 @@ class PSInterpreter:
 
         Args:
             err_condition (bool): Condition on which to throw error
-            message (str): Message to accompany error in log. 
+            message (str): Message to accompany error in log.
         """
         if err_condition: self._logger.error(message)
         assert not err_condition, (message)
@@ -755,7 +756,7 @@ class PSInterpreter:
 
         Args:
             warn_condition (bool): Condition on which to warn
-            message (str): Message to accompany warning in log. 
+            message (str): Message to accompany warning in log.
         """
         if warn_condition: self._logger.warning(message)
     #endregion
