@@ -57,17 +57,28 @@ Test 4
 # Sequence Shapes
 [SHAPES]
 
+# shape_id 1
+# num_samples 100
+# 0.05
+# 0.05
+# 18
+# 0
+# 0
+# 58
+# -0.05
+# -0.05
+# 18
 shape_id 1
 num_samples 100
-0.05
-0.05
-18
+0.2
+0.5
+0.3
 0
 0
-58
--0.05
--0.05
-18
+92
+-0.3
+-0.5
+0.2
 
 shape_id 2
 num_samples 100
